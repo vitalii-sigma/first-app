@@ -1,9 +1,12 @@
-import {Component, inject} from '@angular/core';
+import {Component, inject, OnInit, OnDestroy} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {ActivatedRoute} from '@angular/router';
 import {HousingService} from '../housing.service';
 import {HousingLocation} from '../housinglocation';
 import {FormControl, FormGroup, ReactiveFormsModule} from '@angular/forms';
+import {Subscription} from 'rxjs';
+import {switchMap} from 'rxjs/operators';
+
 @Component({
   selector: 'app-details',
   imports: [CommonModule, ReactiveFormsModule],
@@ -43,7 +46,7 @@ import {FormControl, FormGroup, ReactiveFormsModule} from '@angular/forms';
   `,
   styleUrls: ['./details.component.css'],
 })
-export class DetailsComponent {
+export class DetailsComponent implements OnInit, OnDestroy {
   route: ActivatedRoute = inject(ActivatedRoute);
   housingService = inject(HousingService);
   housingLocation: HousingLocation | undefined;
@@ -52,12 +55,28 @@ export class DetailsComponent {
     lastName: new FormControl(''),
     email: new FormControl(''),
   });
-  constructor() {
-    const housingLocationId = parseInt(this.route.snapshot.params['id'], 10);
-    this.housingService.getHousingLocationById(housingLocationId).then((housingLocation) => {
-      this.housingLocation = housingLocation;
-    });
+
+  routeSubscription: Subscription | undefined;
+
+  ngOnInit() {
+    this.routeSubscription = this.route.paramMap
+      .pipe(
+        switchMap((params) => {
+          const housingLocationId = parseInt(params.get('id')!, 10);
+          return this.housingService.getHousingLocationById(housingLocationId);
+        })
+      )
+      .subscribe((housingLocation) => {
+        this.housingLocation = housingLocation;
+      });
   }
+
+  ngOnDestroy() {
+    if (this.routeSubscription) {
+      this.routeSubscription.unsubscribe();
+    }
+  }
+
   submitApplication() {
     this.housingService.submitApplication(
       this.applyForm.value.firstName ?? '',
