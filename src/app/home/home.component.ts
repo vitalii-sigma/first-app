@@ -35,7 +35,7 @@ export class HomeComponent {
     switchMap((searchText) =>
       this.housingService.getAllHousingLocations().then((housingLocationList: HousingLocation[]) =>
         housingLocationList.filter((housingLocation) =>
-          housingLocation?.city.toLowerCase().includes(searchText.toLowerCase())
+          housingLocation?.city?.toLowerCase().includes(searchText.toLowerCase())
         )
       )
     )
